@@ -114,4 +114,6 @@ then
 			fi
         fi
     done < $CONFIG_FILE
+    echo "No point found: $1" >&2
+    return
 fi
