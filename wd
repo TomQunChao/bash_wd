@@ -1,0 +1,117 @@
+#!/bin/bash
+
+CONFIG_DIR="$HOME/.config/wd/"
+CONFIG_FILE="$CONFIG_DIR/config"
+CUR_DIR=$(pwd)
+if [ $# -lt 1 ]
+then
+    echo -e "wd add DIR_NICKNAME to add current directory\nThese point has been added"
+    echo "**********************"
+    cat $CONFIG_FILE
+    return
+fi
+
+# create config & directory if not exist
+if [ ! -d $CONFIG_DIR ]
+then
+    mkdir -p ${CONFIG_DIR}
+fi
+if [ ! -f $CONFIG_FILE ]
+then
+    touch $CONFIG_FILE
+fi
+
+# add directory
+if [ $1 == "add" ]
+then
+    if [ $# -lt 2 ]
+    then
+        echo "please specify a nick name" >&2
+        return
+    fi
+    pwdesc=$(echo $CUR_DIR | sed 's_/_\\/_g')
+    while read LINE
+    do
+        arr=($(echo $LINE | tr "\t" "\n"))
+        if [ ${#arr[@]} -eq 2 ]
+        then
+            
+            oriesc=$(echo ${arr[1]} | sed 's_/_\\/_g')
+            if [ ${arr[0]} == $2 ] && [ ${arr[1]} == $CUR_DIR ]
+            then
+                echo "this point has been added"
+                return
+            elif [ ${arr[0]} == $2 ]
+            then
+                echo "${2} used, change to $CUR_DIR"
+                sed -i "s/${arr[0]}\\t$oriesc/$2\\t${pwdesc}/g" $CONFIG_FILE
+                return
+            elif [ ${arr[1]} == $CUR_DIR ]
+            then
+                echo "change nick name of $CUR_DIR to $2"
+                sed -i "s/${arr[0]}\\t$oriesc/$2\\t${pwdesc}/g" $CONFIG_FILE
+                return
+            fi
+        fi
+        # echo ${arr[0]}";"${arr[1]}
+    done < $CONFIG_FILE
+    echo -e "$2\t$CUR_DIR" >> $CONFIG_FILE
+    echo "point added"
+    return
+fi
+
+# remove directory
+if [ $1 == "remove" ]
+then
+    if [ $# -eq 1 ]
+    then
+        while read LINE
+        do
+            arr=($(echo $LINE | tr "\t" "\n"))
+			oriesc=$(echo ${arr[1]} | sed 's_/_\\/_g')
+            if [ ${#arr[@]} -eq 2 ]
+            then
+                if [ ${arr[1]} == $CUR_DIR ]
+                then
+                    echo "remove point ${arr[0]} of $CUR_DIR"
+                    sed -i "/${arr[0]}\\t$oriesc/d" $CONFIG_FILE
+                    return
+                fi
+            fi
+        done < $CONFIG_FILE
+    elif [ $# -eq 2 ]
+    then
+        while read LINE
+        do
+            arr=($(echo $LINE | tr "\t" "\n"))
+			oriesc=$(echo ${arr[1]} | sed 's_/_\\/_g')
+            if [ ${#arr[@]} -eq 2 ]
+            then
+                if [ ${arr[0]} == $2 ]
+                then
+                    echo "remove nick name $2 for ${arr[1]}"
+                    sed -i "/${arr[0]}\\t$oriesc/d" $CONFIG_FILE
+                    return
+                fi
+            fi
+        done < $CONFIG_FILE
+    fi
+    return
+fi
+
+# switch to directory
+if [ $# -eq 1 ]
+then
+    while read LINE
+    do
+        arr=($(echo $LINE | tr "\t" "\n"))
+        if [ ${#arr[@]} -eq 2 ]
+        then
+            if [ ${arr[0]} == $1 ]
+			then 
+				cd ${arr[1]}
+				return
+			fi
+        fi
+    done < $CONFIG_FILE
+fi
